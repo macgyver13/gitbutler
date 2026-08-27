@@ -97,7 +97,11 @@
 				}
 			}
 
-			const worktreeChanges = await uncommittedService.worktreeChanges(projectId, stackId);
+			const worktreeChanges = await uncommittedService.worktreeChanges(
+				projectId,
+				stackId,
+				projectState.submoduleCommitOverrides.current,
+			);
 
 			// Get current editor mode from the component instance
 			const isRichTextMode = input?.isRichTextMode?.() || false;
@@ -144,6 +148,10 @@
 
 				// Clear change/hunk selection used for creating the commit.
 				uncommittedService.clearHunkSelection();
+
+				// Submodule overrides apply to one commit only, so a later change to the same
+				// submodule doesn't silently reuse a stale choice.
+				projectState.submoduleCommitOverrides.set({});
 				idSelection.clear(createWorktreeSelection({ stackId }));
 			}
 

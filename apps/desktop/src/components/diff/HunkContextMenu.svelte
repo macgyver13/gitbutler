@@ -85,6 +85,7 @@
 			worktreeChanges: [
 				{
 					previousPathBytes,
+					commitIdOverride: null,
 					pathBytes: change.pathBytes,
 					hunkHeaders: isWholeFileChange ? [] : [item.hunk],
 				},
@@ -104,6 +105,7 @@
 			worktreeChanges: [
 				{
 					previousPathBytes,
+					commitIdOverride: null,
 					pathBytes: change.pathBytes,
 					hunkHeaders: lineIdsToHunkHeaders(item.selectedLines, item.hunk.diff, "discard"),
 				},
@@ -129,6 +131,7 @@
 			changes: [
 				{
 					previousPathBytes,
+					commitIdOverride: null,
 					pathBytes: change.pathBytes,
 					hunkHeaders: isWholeFileChange ? [] : [item.hunk],
 				},

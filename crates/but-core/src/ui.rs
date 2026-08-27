@@ -27,6 +27,82 @@ pub enum PushStatus {
 #[cfg(feature = "export-schema")]
 but_schemars::register_sdk_type!(PushStatus);
 
+/// Whether the commit the superproject would record for a submodule can be resolved by anybody
+/// who clones it. See [`crate::submodule`].
+#[derive(Debug, Clone, Serialize)]
+#[cfg_attr(feature = "export-schema", derive(schemars::JsonSchema))]
+#[serde(rename_all = "camelCase")]
+pub struct SubmoduleStatus {
+    #[serde(with = "but_serde::bstring_lossy")]
+    #[cfg_attr(
+        feature = "export-schema",
+        schemars(schema_with = "but_schemars::bstring_lossy")
+    )]
+    pub path: BString,
+    #[serde(with = "but_serde::object_id")]
+    #[cfg_attr(
+        feature = "export-schema",
+        schemars(schema_with = "but_schemars::object_id")
+    )]
+    pub head: gix::ObjectId,
+    #[serde(with = "but_serde::bstring_lossy_opt")]
+    #[cfg_attr(
+        feature = "export-schema",
+        schemars(schema_with = "but_schemars::bstring_lossy_opt")
+    )]
+    pub head_ref: Option<BString>,
+    pub head_is_workspace_commit: bool,
+    pub head_is_pushed: bool,
+    pub candidates: Vec<SubmoduleCandidate>,
+}
+#[cfg(feature = "export-schema")]
+but_schemars::register_sdk_type!(SubmoduleStatus);
+
+/// A commit that could be recorded instead of the submodule's current `HEAD`.
+#[derive(Debug, Clone, Serialize)]
+#[cfg_attr(feature = "export-schema", derive(schemars::JsonSchema))]
+#[serde(rename_all = "camelCase")]
+pub struct SubmoduleCandidate {
+    #[serde(with = "but_serde::object_id")]
+    #[cfg_attr(
+        feature = "export-schema",
+        schemars(schema_with = "but_schemars::object_id")
+    )]
+    pub id: gix::ObjectId,
+    #[serde(with = "but_serde::bstring_lossy_opt")]
+    #[cfg_attr(
+        feature = "export-schema",
+        schemars(schema_with = "but_schemars::bstring_lossy_opt")
+    )]
+    pub ref_name: Option<BString>,
+    pub is_pushed: bool,
+}
+#[cfg(feature = "export-schema")]
+but_schemars::register_sdk_type!(SubmoduleCandidate);
+
+impl From<crate::submodule::SubmoduleStatus> for SubmoduleStatus {
+    fn from(v: crate::submodule::SubmoduleStatus) -> Self {
+        SubmoduleStatus {
+            path: v.path,
+            head: v.head,
+            head_ref: v.head_ref.map(|n| n.as_bstr().to_owned()),
+            head_is_workspace_commit: v.head_is_workspace_commit,
+            head_is_pushed: v.head_is_pushed,
+            candidates: v.candidates.into_iter().map(Into::into).collect(),
+        }
+    }
+}
+
+impl From<crate::submodule::SubmoduleCandidate> for SubmoduleCandidate {
+    fn from(v: crate::submodule::SubmoduleCandidate) -> Self {
+        SubmoduleCandidate {
+            id: v.id,
+            ref_name: v.ref_name.map(|n| n.as_bstr().to_owned()),
+            is_pushed: v.is_pushed,
+        }
+    }
+}
+
 /// Represents the state a commit could be in.
 #[derive(Debug, Clone, Serialize)]
 #[cfg_attr(feature = "export-schema", derive(schemars::JsonSchema))]

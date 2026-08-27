@@ -530,5 +530,11 @@ fn reason_summary(reason: RejectionReason) -> &'static str {
         RejectionReason::MissingDiffSpecAssociation => {
             "the selected hunks no longer match the worktree"
         }
+        RejectionReason::SubmoduleOverrideOnNonSubmodule => {
+            "a submodule commit was chosen for a path that is not a submodule"
+        }
+        RejectionReason::SubmoduleOverrideCommitNotFound => {
+            "the chosen commit does not exist in the submodule"
+        }
     }
 }

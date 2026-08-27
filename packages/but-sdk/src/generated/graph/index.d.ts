@@ -149,7 +149,7 @@ export declare function applyBranchIntegration(projectId: string, branch: string
  *
  * See [`assign_hunk_with_perm()`] for details.
  *
- * {@link ../../../../../crates/but-api/src/diff.rs:267}
+ * {@link ../../../../../crates/but-api/src/diff.rs:287}
  */
 export declare function assignHunk(projectId: string, assignments: Array<HunkAssignmentRequest>): Promise<void>
 
@@ -289,7 +289,7 @@ export declare function branchRename(projectId: string, refName: FullNameBytes, 
 /**
  * See [`changes_in_worktree_with_perm()`].
  *
- * {@link ../../../../../crates/but-api/src/diff.rs:122}
+ * {@link ../../../../../crates/but-api/src/diff.rs:142}
  */
 export declare function changesInWorktree(projectId: string, changesSource: ChangesSource, computeDepsAndAssignments: boolean): Promise<WorktreeChanges>
 
@@ -319,7 +319,7 @@ export declare function changesInWorktree(projectId: string, changesSource: Chan
  * [`but_hunk_assignment::assignments_with_fallback()`], and
  * [`but_hunk_dependency::ui::hunk_dependencies_for_workspace_changes_by_worktree_dir()`].
  *
- * {@link ../../../../../crates/but-api/src/diff.rs:162}
+ * {@link ../../../../../crates/but-api/src/diff.rs:182}
  */
 export declare function changesInWorktreeWithPerm(projectId: string, changesSource: ChangesSource, computeDepsAndAssignments: boolean): Promise<WorktreeChanges>
 
@@ -1453,6 +1453,21 @@ export declare function storeGithubPat(accessToken: string): Promise<GithubAuthS
  * {@link ../../../../../crates/but-api/src/gitlab.rs:20}
  */
 export declare function storeGitlabPat(accessToken: string): Promise<GitlabAuthStatusResponse>
+
+/**
+ * Report what the superproject would record for the submodule `change` points at, and whether
+ * anybody cloning the superproject could resolve it.
+ *
+ * Returns `None` if the path is not an active submodule with a local clone, which is the normal
+ * outcome for an embedded repository or an uninitialized submodule.
+ *
+ * This is deliberately not folded into [`changes_in_worktree()`]: it opens the submodule
+ * repository and walks its history, which is too costly for a listing that runs on every status
+ * refresh. Call it when a submodule change is selected, and before committing one.
+ *
+ * {@link ../../../../../crates/but-api/src/diff.rs:117}
+ */
+export declare function submoduleStatus(projectId: string, change: TreeChange): Promise<SubmoduleStatus | null>
 
 /**
  * Tears off a branch using the behavior described by [`tear_off_branch_with_perm()`].
@@ -2765,6 +2780,15 @@ export type DiffSpec = {
    * Otherwise, the whole file is being deleted.
    */
   hunkHeaders: Array<HunkHeader>;
+  /**
+   * Record this commit for the gitlink at `path` instead of whatever the submodule worktree
+   * currently has checked out.
+   *
+   * Only meaningful when `path` is a submodule. It exists because a submodule managed by
+   * GitButler has `HEAD` on a workspace commit that is never pushed, so recording it verbatim
+   * would leave the superproject pointing at a commit nobody else can resolve.
+   */
+  commitIdOverride: string | null;
 };
 
 /** Holds relevant state required to switch to and from edit mode */
@@ -3932,7 +3956,7 @@ export type RejectedChange = {
 };
 
 /** Provide a description of why a [`crate::DiffSpec`] was rejected for application to the tree of a commit. */
-export type RejectionReason = "noEffectiveChanges" | "cherryPickMergeConflict" | "workspaceMergeConflict" | "workspaceMergeConflictOfUnrelatedFile" | "worktreeFileMissingForObjectConversion" | "fileToLargeOrBinary" | "pathNotFoundInBaseTree" | "unsupportedDirectoryEntry" | "unsupportedTreeEntry" | "missingDiffSpecAssociation";
+export type RejectionReason = "noEffectiveChanges" | "cherryPickMergeConflict" | "workspaceMergeConflict" | "workspaceMergeConflictOfUnrelatedFile" | "worktreeFileMissingForObjectConversion" | "fileToLargeOrBinary" | "pathNotFoundInBaseTree" | "unsupportedDirectoryEntry" | "unsupportedTreeEntry" | "missingDiffSpecAssociation" | "submoduleOverrideOnNonSubmodule" | "submoduleOverrideCommitNotFound";
 
 /**
  * Specifies a location, usually used to either have something inserted
@@ -4269,6 +4293,26 @@ export type StackReference = {
   branches: Array<string>;
   /** Pull Request numbers by branch name associated with the stack */
   pullRequests: Record<string, number>;
+};
+
+/** A commit that could be recorded instead of the submodule's current `HEAD`. */
+export type SubmoduleCandidate = {
+  id: string;
+  refName: string | null;
+  isPushed: boolean;
+};
+
+/**
+ * Whether the commit the superproject would record for a submodule can be resolved by anybody
+ * who clones it. See [`crate::submodule`].
+ */
+export type SubmoduleStatus = {
+  path: string;
+  head: string;
+  headRef: string | null;
+  headIsWorkspaceCommit: boolean;
+  headIsPushed: boolean;
+  candidates: Array<SubmoduleCandidate>;
 };
 
 /** Information about the target reference, the one we want to integrate with. */

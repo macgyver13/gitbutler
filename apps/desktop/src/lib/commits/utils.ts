@@ -15,6 +15,7 @@ export function changesToDiffSpec(
 
 		return {
 			previousPathBytes,
+			commitIdOverride: null,
 			pathBytes: change.pathBytes,
 			hunkHeaders,
 		};

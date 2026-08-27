@@ -106,6 +106,7 @@ describe("buildStackEndpoints", () => {
 						changes: [
 							{
 								previousPathBytes: null,
+								commitIdOverride: null,
 								pathBytes: [102, 105, 108, 101, 46, 116, 120, 116],
 								hunkHeaders: [],
 							},
@@ -123,6 +124,7 @@ describe("buildStackEndpoints", () => {
 					changes: [
 						{
 							previousPathBytes: null,
+							commitIdOverride: null,
 							pathBytes: [102, 105, 108, 101, 46, 116, 120, 116],
 							hunkHeaders: [],
 						},

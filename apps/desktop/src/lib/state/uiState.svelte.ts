@@ -28,7 +28,9 @@ export type RejectionReason =
 	| "pathNotFoundInBaseTree"
 	| "unsupportedDirectoryEntry"
 	| "unsupportedTreeEntry"
-	| "missingDiffSpecAssociation";
+	| "missingDiffSpecAssociation"
+	| "submoduleOverrideOnNonSubmodule"
+	| "submoduleOverrideCommitNotFound";
 
 export type StackSelection = {
 	branchName?: string;
@@ -79,6 +81,11 @@ export type ProjectUiState = {
 	exclusiveAction: ExclusiveAction | undefined;
 	stackBusy: StackBusyState | undefined;
 	branchesToPoll: string[];
+	/**
+	 * Commit to record for a submodule gitlink instead of what its worktree has checked out,
+	 * keyed by the submodule's path. Set when the user resolves an unpushable submodule pointer.
+	 */
+	submoduleCommitOverrides: Record<string, string>;
 };
 
 type GlobalModalType =
@@ -215,6 +222,7 @@ export class UiState {
 		exclusiveAction: undefined,
 		stackBusy: undefined,
 		branchesToPoll: [],
+		submoduleCommitOverrides: {},
 	});
 
 	/** Properties that are globally scoped. */

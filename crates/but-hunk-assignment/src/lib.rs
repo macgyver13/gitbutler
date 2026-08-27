@@ -168,6 +168,7 @@ impl From<HunkAssignment> for but_core::DiffSpec {
             previous_path: None, // TODO
             path: value.path_bytes.clone(),
             hunk_headers,
+            commit_id_override: None,
         }
     }
 }
@@ -698,6 +699,7 @@ pub fn convert_hunks_to_diff_specs(
             previous_path: None, // TODO: Handle renames
             path,
             hunk_headers,
+            commit_id_override: None,
         })
         .collect())
 }

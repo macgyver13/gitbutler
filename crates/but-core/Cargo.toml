@@ -37,6 +37,8 @@ gix = { workspace = true, features = [
     "serde",
     "status",
     "merge",
+    # for ancestry checks in `submodule`
+    "revision",
 ] }
 smallvec.workspace = true
 # for V1 conflict commits

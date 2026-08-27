@@ -21,6 +21,7 @@ fn single() {
             new_start: 1,
             new_lines: 3,
         }],
+        commit_id_override: None,
     };
     let input = vec![spec.clone()];
     let result = flatten_diff_specs(input);
@@ -39,6 +40,7 @@ fn different_files() {
             new_start: 1,
             new_lines: 3,
         }],
+        commit_id_override: None,
     };
     let spec2 = DiffSpec {
         path: BString::from("file2.txt"),
@@ -49,6 +51,7 @@ fn different_files() {
             new_start: 5,
             new_lines: 2,
         }],
+        commit_id_override: None,
     };
     let input = vec![spec1.clone(), spec2.clone()];
     let result = flatten_diff_specs(input);
@@ -76,11 +79,13 @@ fn same_file_merge_hunks() {
         path: BString::from("file.txt"),
         previous_path: None,
         hunk_headers: vec![hunk1],
+        commit_id_override: None,
     };
     let spec2 = DiffSpec {
         path: BString::from("file.txt"),
         previous_path: None,
         hunk_headers: vec![hunk2],
+        commit_id_override: None,
     };
 
     let input = vec![spec1, spec2];
@@ -105,6 +110,7 @@ fn with_previous_path() {
             new_start: 1,
             new_lines: 3,
         }],
+        commit_id_override: None,
     };
     let spec2 = DiffSpec {
         path: BString::from("new_file.txt"),
@@ -115,6 +121,7 @@ fn with_previous_path() {
             new_start: 5,
             new_lines: 2,
         }],
+        commit_id_override: None,
     };
 
     let input = vec![spec1.clone(), spec2.clone()];
@@ -145,11 +152,13 @@ fn same_previous_path() {
         path: BString::from("new_file.txt"),
         previous_path: Some(BString::from("old_file.txt")),
         hunk_headers: vec![hunk1],
+        commit_id_override: None,
     };
     let spec2 = DiffSpec {
         path: BString::from("new_file.txt"),
         previous_path: Some(BString::from("old_file.txt")),
         hunk_headers: vec![hunk2],
+        commit_id_override: None,
     };
 
     let input = vec![spec1, spec2];

@@ -68,6 +68,6 @@ fn spec(previous_path: Option<&str>, path: &str) -> DiffSpec {
     DiffSpec {
         previous_path: previous_path.map(Into::into),
         path: path.into(),
-        hunk_headers: vec![],
+        ..Default::default()
     }
 }

@@ -29,6 +29,18 @@ pub struct DiffSpec {
     /// If empty, the whole file is taken as is if this seems to be an addition.
     /// Otherwise, the whole file is being deleted.
     pub hunk_headers: Vec<HunkHeader>,
+    /// Record this commit for the gitlink at `path` instead of whatever the submodule worktree
+    /// currently has checked out.
+    ///
+    /// Only meaningful when `path` is a submodule. It exists because a submodule managed by
+    /// GitButler has `HEAD` on a workspace commit that is never pushed, so recording it verbatim
+    /// would leave the superproject pointing at a commit nobody else can resolve.
+    #[serde(default)]
+    #[cfg_attr(
+        feature = "export-schema",
+        schemars(schema_with = "but_schemars::object_id_opt")
+    )]
+    pub commit_id_override: Option<gix::ObjectId>,
 }
 #[cfg(feature = "export-schema")]
 but_schemars::register_sdk_type!(DiffSpec);
@@ -39,6 +51,7 @@ impl From<&TreeChange> for DiffSpec {
             previous_path: change.previous_path().map(ToOwned::to_owned),
             path: change.path.to_owned(),
             hunk_headers: vec![],
+            commit_id_override: None,
         }
     }
 }
@@ -49,6 +62,7 @@ impl From<TreeChange> for DiffSpec {
             previous_path: change.previous_path().map(ToOwned::to_owned),
             path: change.path.to_owned(),
             hunk_headers: vec![],
+            commit_id_override: None,
         }
     }
 }

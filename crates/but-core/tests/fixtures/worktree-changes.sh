@@ -299,6 +299,29 @@ cp -Rv submodule-changed-head submodule-changed-head-ignore-all
   echo $'\tignore = all\n' >>.gitmodules
 )
 
+git init submodule-in-gitbutler-workspace
+(cd submodule-in-gitbutler-workspace
+  git submodule add ../modified-in-index submodule
+  git commit -m "init"
+  (cd submodule
+    git checkout -b pushed-feature
+    echo pushed >>modified && git commit -am "work that reached the remote"
+    git push origin pushed-feature
+
+    git checkout -b local-feature pushed-feature~1
+    echo local >>modified && git commit -am "work that never left this clone"
+
+    # Synthesize what GitButler leaves behind for a two-stack workspace: a commit whose
+    # parents are the stack tips, with HEAD symbolic to the workspace ref. Its tree matches
+    # HEAD so the submodule worktree stays clean.
+    workspace=$(git commit-tree -p pushed-feature -p local-feature \
+      -m "GitButler Workspace Commit" "$(git rev-parse local-feature^{tree})")
+    git update-ref refs/heads/gitbutler/workspace "$workspace"
+    git symbolic-ref HEAD refs/heads/gitbutler/workspace
+    git reset --hard
+  )
+)
+
 git init submodule-changed-worktree-ignore-none
 (cd submodule-changed-worktree-ignore-none
   git submodule add ../modified-in-index submodule

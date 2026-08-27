@@ -111,6 +111,9 @@ pub mod worktree;
 /// Utilities to create Git trees.
 pub mod tree;
 
+/// Inspection of submodules and the commits they point at.
+pub mod submodule;
+
 /// Various types
 pub mod ref_metadata;
 use crate::ref_metadata::ValueInfo;

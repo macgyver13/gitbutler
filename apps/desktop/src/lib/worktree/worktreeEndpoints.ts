@@ -12,6 +12,7 @@ import type {
 	HunkAssignmentRequest,
 	HunkDependencies,
 	IgnoredWorktreeChange,
+	SubmoduleStatus,
 	TreeChange,
 	WorktreeChanges,
 } from "@gitbutler/but-sdk";
@@ -96,6 +97,14 @@ export function buildWorktreeEndpoints(build: BackendEndpointBuilder) {
 			extraOptions: { command: "tree_change_diffs" },
 			query: (args) => args,
 			providesTags: [providesList(ReduxTag.Diff)],
+		}),
+		getSubmoduleStatus: build.query<
+			SubmoduleStatus | null,
+			{ projectId: string; change: TreeChange }
+		>({
+			extraOptions: { command: "submodule_status" },
+			query: (args) => args,
+			providesTags: [providesList(ReduxTag.WorktreeChanges)],
 		}),
 		assignHunk: build.mutation<void, { projectId: string; assignments: HunkAssignmentRequest[] }>({
 			extraOptions: {

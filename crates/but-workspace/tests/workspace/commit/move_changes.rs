@@ -13,6 +13,7 @@ fn diff_spec_for_file(path: &str) -> DiffSpec {
         previous_path: None,
         path: path.into(),
         hunk_headers: vec![],
+        commit_id_override: None,
     }
 }
 

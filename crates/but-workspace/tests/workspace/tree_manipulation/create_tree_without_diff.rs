@@ -25,6 +25,7 @@ fn two_regular_commits_should_succeed() -> anyhow::Result<()> {
                 new_start: 4,
                 new_lines: 2,
             }],
+            commit_id_override: None,
         }],
         CONTEXT_LINES,
     )?;
@@ -63,6 +64,7 @@ fn conflicted_then_regular_should_succeed() -> anyhow::Result<()> {
                 new_start: 2,
                 new_lines: 2,
             }],
+            commit_id_override: None,
         }],
         CONTEXT_LINES,
     )?;

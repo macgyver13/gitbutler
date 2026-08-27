@@ -292,6 +292,7 @@ export class UncommitDzHandler implements DropzoneHandler {
 						changes: [
 							{
 								previousPathBytes,
+								commitIdOverride: null,
 								pathBytes: data.change.pathBytes,
 								hunkHeaders: [
 									{
@@ -377,6 +378,7 @@ export class AmendCommitWithHunkDzHandler implements DropzoneHandler {
 							changes: [
 								{
 									previousPathBytes,
+									commitIdOverride: null,
 									pathBytes: data.change.pathBytes,
 									hunkHeaders: [
 										{
@@ -403,6 +405,7 @@ export class AmendCommitWithHunkDzHandler implements DropzoneHandler {
 			const worktreeChanges = [
 				{
 					previousPathBytes,
+					commitIdOverride: null,
 					pathBytes: data.change.pathBytes,
 					hunkHeaders: [
 						{

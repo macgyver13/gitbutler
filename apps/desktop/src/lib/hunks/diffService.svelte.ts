@@ -18,6 +18,11 @@ export class DiffService {
 		return this.backendApi.endpoints.getDiff.useQuery({ projectId, change });
 	}
 
+	/** Whether the commit a submodule gitlink would record can be resolved by anybody else. */
+	getSubmoduleStatus(projectId: string, change: TreeChange) {
+		return this.backendApi.endpoints.getSubmoduleStatus.useQuery({ projectId, change });
+	}
+
 	get assignHunk() {
 		return this.backendApi.endpoints.assignHunk.mutate;
 	}

@@ -128,6 +128,10 @@ export function readableRejectionReason(reason: RejectionReason): string {
 			return "Unsupported tree entry";
 		case "missingDiffSpecAssociation":
 			return "Missing diff spec association";
+		case "submoduleOverrideOnNonSubmodule":
+			return "Not a submodule";
+		case "submoduleOverrideCommitNotFound":
+			return "Commit not found in the submodule";
 	}
 }
 

@@ -170,6 +170,7 @@ impl<'a> DiffSpecBuilder<'a> {
             previous_path: None,
             path,
             hunk_headers: Vec::from([header]),
+            commit_id_override: None,
         });
     }
 

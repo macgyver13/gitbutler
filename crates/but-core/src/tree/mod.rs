@@ -46,6 +46,11 @@ pub mod create_tree {
         /// The DiffSpec points to an actual change, or a subset of that change using a file path and optionally hunks into that file.
         /// However, at least one hunk was not fully contained.
         MissingDiffSpecAssociation,
+        /// A `commit_id_override` was given for a path that is not a submodule with a local clone.
+        SubmoduleOverrideOnNonSubmodule,
+        /// A `commit_id_override` was given, but the commit doesn't exist in the submodule, so
+        /// recording it would leave a dangling gitlink.
+        SubmoduleOverrideCommitNotFound,
     }
 
     #[cfg(feature = "export-schema")]
@@ -54,6 +59,31 @@ pub mod create_tree {
 use create_tree::RejectionReason;
 
 use crate::worktree::worktree_file_to_git_in_buf;
+
+/// The outcome of validating a [`DiffSpec::commit_id_override`].
+enum SubmoduleOverride {
+    Valid,
+    NotASubmodule,
+    CommitNotFound,
+}
+
+/// Validate that `path` holds a cloned submodule that knows `commit_id`.
+///
+/// Writing a gitlink for a commit the submodule doesn't have would produce a superproject that
+/// cannot be checked out, so this is refused rather than trusted.
+fn submodule_containing_commit(
+    repo: &gix::Repository,
+    path: &std::path::Path,
+    commit_id: gix::ObjectId,
+) -> SubmoduleOverride {
+    let Ok(sm_repo) = gix::open_opts(path, repo.open_options().clone()) else {
+        return SubmoduleOverride::NotASubmodule;
+    };
+    if sm_repo.find_commit(commit_id).is_err() {
+        return SubmoduleOverride::CommitNotFound;
+    }
+    SubmoduleOverride::Valid
+}
 
 /// Additional information about the outcome of a [`create_tree()`] call.
 #[derive(Debug)]
@@ -224,7 +254,26 @@ pub fn apply_worktree_changes<'repo>(
             }
             Err(err) => return Err(err.into()),
         };
-        if change_request.hunk_headers.is_empty() {
+        if let Some(commit_id) = change_request.commit_id_override {
+            let rela_path = change_request.path.as_bstr();
+            match submodule_containing_commit(repo, &path, commit_id) {
+                SubmoduleOverride::Valid => {
+                    base_tree_editor.upsert(
+                        rela_path,
+                        gix::object::tree::EntryKind::Commit,
+                        commit_id,
+                    )?;
+                }
+                SubmoduleOverride::NotASubmodule => into_err_spec(
+                    possible_change,
+                    RejectionReason::SubmoduleOverrideOnNonSubmodule,
+                ),
+                SubmoduleOverride::CommitNotFound => into_err_spec(
+                    possible_change,
+                    RejectionReason::SubmoduleOverrideCommitNotFound,
+                ),
+            }
+        } else if change_request.hunk_headers.is_empty() {
             let rela_path = change_request.path.as_bstr();
             match pipeline.worktree_file_to_object(rela_path, &index)? {
                 Some((id, kind, _fs_metadata)) => {

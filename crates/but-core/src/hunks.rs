@@ -99,6 +99,7 @@ impl From<SingleHunk> for DiffSpec {
             previous_path: None, // TODO
             path: value.path,
             hunk_headers: value.hunk_header.into_iter().collect(),
+            commit_id_override: None,
         }
     }
 }

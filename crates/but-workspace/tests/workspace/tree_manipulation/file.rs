@@ -1343,6 +1343,7 @@ mod util {
             previous_path: None,
             path: name.into(),
             hunk_headers: vec![],
+            commit_id_override: None,
         }
     }
 
@@ -1351,6 +1352,7 @@ mod util {
             previous_path: Some(previous.into()),
             path: name.into(),
             hunk_headers: vec![],
+            commit_id_override: None,
         }
     }
 
@@ -1362,4 +1364,83 @@ mod util {
         )
         .into_iter()
     }
+}
+
+/// A submodule managed by GitButler has `HEAD` on a workspace commit that is never pushed, so
+/// committing the gitlink verbatim records a pointer nobody else can resolve. A `commit_id_override`
+/// lets the caller record a real, pushable commit instead.
+#[test]
+#[cfg(unix)]
+fn submodule_commit_id_override_is_recorded() -> anyhow::Result<()> {
+    let (repo, _tmp) = writable_scenario("modified-submodule-and-embedded-repo");
+    let base_tree = repo.head_tree_id()?.detach();
+
+    let sm_repo = gix::open_opts(
+        repo.workdir().expect("non-bare").join("submodule"),
+        repo.open_options().clone(),
+    )?;
+    let head = sm_repo.head_id()?.detach();
+    let chosen = sm_repo
+        .find_commit(head)?
+        .parent_ids()
+        .next()
+        .expect("the submodule has history to choose from")
+        .detach();
+    assert_ne!(
+        chosen, head,
+        "the override must differ from what the worktree would record"
+    );
+
+    let mut changes = vec![Ok(but_core::DiffSpec {
+        path: "submodule".into(),
+        commit_id_override: Some(chosen),
+        ..Default::default()
+    })];
+    let (new_tree, _base) =
+        but_core::tree::apply_worktree_changes(base_tree, &repo, &mut changes, CONTEXT_LINES)?;
+
+    assert!(
+        changes.iter().all(|c| c.is_ok()),
+        "the override is valid and must not be rejected: {changes:?}"
+    );
+    let recorded = new_tree
+        .object()?
+        .into_tree()
+        .lookup_entry_by_path("submodule")?
+        .expect("the gitlink is still there")
+        .object_id();
+    assert_eq!(
+        recorded, chosen,
+        "the chosen commit is recorded, not the submodule's current HEAD"
+    );
+    Ok(())
+}
+
+/// Recording a commit the submodule doesn't have would produce a superproject that cannot be
+/// checked out, so it is rejected rather than trusted.
+#[test]
+#[cfg(unix)]
+fn submodule_commit_id_override_rejects_an_unknown_commit() -> anyhow::Result<()> {
+    let (repo, _tmp) = writable_scenario("modified-submodule-and-embedded-repo");
+    let base_tree = repo.head_tree_id()?.detach();
+
+    let mut changes = vec![Ok(but_core::DiffSpec {
+        path: "submodule".into(),
+        // A commit of the superproject, which the submodule's object database knows nothing about.
+        commit_id_override: Some(repo.head_id()?.detach()),
+        ..Default::default()
+    })];
+    but_core::tree::apply_worktree_changes(base_tree, &repo, &mut changes, CONTEXT_LINES)?;
+
+    assert!(
+        matches!(
+            changes.first(),
+            Some(Err((
+                but_core::tree::create_tree::RejectionReason::SubmoduleOverrideCommitNotFound,
+                _
+            )))
+        ),
+        "expected a rejection, got {changes:?}"
+    );
+    Ok(())
 }
