@@ -44,15 +44,22 @@ pub struct SubmoduleStatus {
         feature = "export-schema",
         schemars(schema_with = "but_schemars::object_id")
     )]
-    pub head: gix::ObjectId,
+    pub commit: gix::ObjectId,
+    pub is_head: bool,
     #[serde(with = "but_serde::bstring_lossy_opt")]
     #[cfg_attr(
         feature = "export-schema",
         schemars(schema_with = "but_schemars::bstring_lossy_opt")
     )]
     pub head_ref: Option<BString>,
-    pub head_is_workspace_commit: bool,
-    pub head_is_pushed: bool,
+    #[serde(with = "but_serde::bstring_lossy_opt")]
+    #[cfg_attr(
+        feature = "export-schema",
+        schemars(schema_with = "but_schemars::bstring_lossy_opt")
+    )]
+    pub ref_name: Option<BString>,
+    pub is_workspace_commit: bool,
+    pub is_pushed: bool,
     pub candidates: Vec<SubmoduleCandidate>,
 }
 #[cfg(feature = "export-schema")]
@@ -84,10 +91,12 @@ impl From<crate::submodule::SubmoduleStatus> for SubmoduleStatus {
     fn from(v: crate::submodule::SubmoduleStatus) -> Self {
         SubmoduleStatus {
             path: v.path,
-            head: v.head,
+            commit: v.commit,
+            is_head: v.is_head,
             head_ref: v.head_ref.map(|n| n.as_bstr().to_owned()),
-            head_is_workspace_commit: v.head_is_workspace_commit,
-            head_is_pushed: v.head_is_pushed,
+            ref_name: v.ref_name.map(|n| n.as_bstr().to_owned()),
+            is_workspace_commit: v.is_workspace_commit,
+            is_pushed: v.is_pushed,
             candidates: v.candidates.into_iter().map(Into::into).collect(),
         }
     }

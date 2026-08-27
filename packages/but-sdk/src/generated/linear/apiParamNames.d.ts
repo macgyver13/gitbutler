@@ -131,7 +131,7 @@ export declare const apiParamNames: {
 	readonly storeBitbucketApiToken: readonly ["email", "accessToken"];
 	readonly storeGithubPat: readonly ["accessToken"];
 	readonly storeGitlabPat: readonly ["accessToken"];
-	readonly submoduleStatus: readonly ["projectId", "change"];
+	readonly submoduleStatus: readonly ["projectId", "change", "commitId"];
 	readonly tearOffBranch: readonly ["projectId", "subjectBranch", "dryRun"];
 	readonly treeChangeDiffs: readonly ["projectId", "change"];
 	readonly unapplyStack: readonly ["projectId", "stackId"];

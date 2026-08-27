@@ -19,8 +19,8 @@ export class DiffService {
 	}
 
 	/** Whether the commit a submodule gitlink would record can be resolved by anybody else. */
-	getSubmoduleStatus(projectId: string, change: TreeChange) {
-		return this.backendApi.endpoints.getSubmoduleStatus.useQuery({ projectId, change });
+	getSubmoduleStatus(projectId: string, change: TreeChange, commitId: string) {
+		return this.backendApi.endpoints.getSubmoduleStatus.useQuery({ projectId, change, commitId });
 	}
 
 	get assignHunk() {

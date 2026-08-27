@@ -43,21 +43,32 @@
 
 	const commits = $derived(submoduleCommits(change.status));
 
-	// Only an uncommitted change can still have its recorded commit chosen. For a change that is
-	// already committed the pointer is settled, and the submodule's current HEAD says nothing
-	// about what that commit recorded.
+	// Only an uncommitted change can still have its recorded commit chosen. A committed one is
+	// settled, so it gets the description without the picker.
 	const isUncommitted = $derived(selectionId.type === "worktree");
 	const statusQuery = $derived(
-		isUncommitted ? diffService.getSubmoduleStatus(projectId, change) : undefined,
+		commits.current
+			? diffService.getSubmoduleStatus(projectId, change, commits.current)
+			: undefined,
+	);
+	const status = $derived(statusQuery?.response ?? undefined);
+
+	const override = $derived(
+		isUncommitted ? projectState.submoduleCommitOverrides.current[change.path] : undefined,
 	);
 
-	const override = $derived(projectState.submoduleCommitOverrides.current[change.path]);
+	function shortRef(refName: string | null | undefined): string | undefined {
+		return refName?.replace("refs/heads/", "");
+	}
 
-	/** The branch the chosen commit is the tip of, so the summary names it rather than only its sha. */
-	const overrideRefName = $derived(
-		statusQuery?.response?.candidates
-			.find((candidate) => candidate.id === override)
-			?.refName?.replace("refs/heads/", ""),
+	/**
+	 * The branch to name beside the recorded sha: the chosen tip once the user picks one,
+	 * otherwise whatever branch the recorded commit is the tip of.
+	 */
+	const currentRefName = $derived(
+		override
+			? shortRef(status?.candidates.find((candidate) => candidate.id === override)?.refName)
+			: shortRef(status?.refName),
 	);
 
 	function setOverride(commitId: string | undefined) {
@@ -97,8 +108,10 @@
 			{/if}
 			{#if commits.current}
 				{@render sha(override ?? commits.current, "current")}
-				{#if overrideRefName}
-					<span class="submodule__ref">{overrideRefName}</span>
+				{#if currentRefName}
+					<span class="submodule__ref">{currentRefName}</span>
+				{:else if status?.isWorkspaceCommit}
+					<span class="submodule__ref">GitButler workspace</span>
 				{/if}
 			{/if}
 		</div>
@@ -107,27 +120,28 @@
 	{#if statusQuery}
 		<ReduxResult {projectId} result={statusQuery.result}>
 			{#snippet children(status: SubmoduleStatus | null)}
-				{#if status && !status.headIsPushed}
+				{#if status && !status.isPushed}
 					<div class="submodule__warning">
 						<InfoMessage filled outlined={false} style="warning">
 							{#snippet title()}
-								{#if status.headIsWorkspaceCommit}
-									This points at a GitButler workspace commit
+								{#if status.isWorkspaceCommit}
+									{isUncommitted ? "This points" : "This commit points"} at a GitButler workspace commit
 								{:else}
-									This points at an unpushed commit
+									{isUncommitted ? "This points" : "This commit points"} at an unpushed commit
 								{/if}
 							{/snippet}
 							{#snippet content()}
 								<p>
-									{#if status.headIsWorkspaceCommit}
-										The submodule's HEAD is its GitButler workspace, which is never pushed.
-										Committing it records a commit nobody else can resolve after cloning.
+									{#if status.isWorkspaceCommit}
+										A GitButler workspace commit is never pushed, so
+										{isUncommitted ? "committing this records" : "this records"} a commit nobody else
+										can resolve after cloning.
 									{:else}
-										The submodule's HEAD has not reached its remote, so this pointer cannot be
+										This commit has not reached the submodule's remote, so the pointer cannot be
 										resolved after cloning until it is pushed.
 									{/if}
 								</p>
-								{#if status.candidates.length > 0}
+								{#if isUncommitted && status.candidates.length > 0}
 									<p class="submodule__candidates-intro">Select a branch tip to record instead:</p>
 									<div class="submodule__candidates">
 										{#each status.candidates as candidate (candidate.id)}
@@ -147,8 +161,8 @@
 									</div>
 									{#if override}
 										<p class="submodule__chosen">
-											Committing will record {overrideRefName
-												? `${overrideRefName} (${override.slice(0, 7)})`
+											Committing will record {currentRefName
+												? `${currentRefName} (${override.slice(0, 7)})`
 												: override.slice(0, 7)} for this submodule.
 										</p>
 									{/if}

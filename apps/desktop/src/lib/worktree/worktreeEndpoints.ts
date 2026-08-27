@@ -100,7 +100,7 @@ export function buildWorktreeEndpoints(build: BackendEndpointBuilder) {
 		}),
 		getSubmoduleStatus: build.query<
 			SubmoduleStatus | null,
-			{ projectId: string; change: TreeChange }
+			{ projectId: string; change: TreeChange; commitId: string }
 		>({
 			extraOptions: { command: "submodule_status" },
 			query: (args) => args,

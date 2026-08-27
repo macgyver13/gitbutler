@@ -131,7 +131,7 @@ export const apiParamNames = {
 	storeBitbucketApiToken: ["email", "accessToken"],
 	storeGithubPat: ["accessToken"],
 	storeGitlabPat: ["accessToken"],
-	submoduleStatus: ["projectId", "change"],
+	submoduleStatus: ["projectId", "change", "commitId"],
 	tearOffBranch: ["projectId", "subjectBranch", "dryRun"],
 	treeChangeDiffs: ["projectId", "change"],
 	unapplyStack: ["projectId", "stackId"],

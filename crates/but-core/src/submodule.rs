@@ -11,26 +11,33 @@ use bstr::{BStr, BString};
 use gix::revision::plumbing::{graph, merge_base::Flags};
 use gix::revwalk::Graph;
 
-/// What the superproject would record for the submodule at [`path`](Self::path), and whether
-/// that pointer can be resolved by somebody who clones the superproject.
+/// A description of one commit of the submodule at [`path`](Self::path): the one a gitlink
+/// records, or the one it would record, and whether somebody cloning the superproject could
+/// resolve it.
 #[derive(Debug, Clone)]
 pub struct SubmoduleStatus {
     /// The worktree-relative path of the submodule in the superproject.
     pub path: BString,
-    /// The commit the submodule worktree points at, i.e. what a commit would record.
-    pub head: gix::ObjectId,
-    /// The reference `HEAD` is symbolic to, or `None` if `HEAD` is detached.
+    /// The commit being described.
+    pub commit: gix::ObjectId,
+    /// `true` if [`commit`](Self::commit) is what the submodule worktree currently points at,
+    /// i.e. what committing this gitlink would record.
+    pub is_head: bool,
+    /// The reference `HEAD` is symbolic to, set only when describing `HEAD` and it isn't detached.
     pub head_ref: Option<gix::refs::FullName>,
-    /// `true` if [`head`](Self::head) is a synthetic GitButler workspace commit, which is
+    /// The local branch pointing at [`commit`](Self::commit), for display. GitButler's own
+    /// bookkeeping refs are never reported here.
+    pub ref_name: Option<gix::refs::FullName>,
+    /// `true` if [`commit`](Self::commit) is a synthetic GitButler workspace commit, which is
     /// never pushed and thus can never be resolved by anybody else.
-    pub head_is_workspace_commit: bool,
-    /// `true` if [`head`](Self::head) is reachable from one of the submodule's remote tracking
-    /// branches, which is what a fresh clone would be able to resolve.
-    pub head_is_pushed: bool,
-    /// Commits that could be recorded instead of [`head`](Self::head), most-preferred first.
+    pub is_workspace_commit: bool,
+    /// `true` if [`commit`](Self::commit) is reachable from one of the submodule's remote
+    /// tracking branches, which is what a fresh clone would be able to resolve.
+    pub is_pushed: bool,
+    /// Commits that could be recorded instead of [`commit`](Self::commit), most-preferred first.
     ///
-    /// Only populated when [`head_is_workspace_commit`](Self::head_is_workspace_commit) is set,
-    /// as the parents of a workspace commit are the tips of the applied stacks.
+    /// Only populated when [`is_workspace_commit`](Self::is_workspace_commit) is set, as the
+    /// parents of a workspace commit are the tips of the applied stacks.
     pub candidates: Vec<SubmoduleCandidate>,
 }
 
@@ -48,11 +55,18 @@ pub struct SubmoduleCandidate {
 }
 
 impl SubmoduleStatus {
-    /// `true` if committing this gitlink would record a pointer that nobody else can resolve.
+    /// `true` if this gitlink is a pointer nobody else can resolve.
     pub fn is_unresolvable(&self) -> bool {
-        !self.head_is_pushed
+        !self.is_pushed
     }
 }
+
+/// The subject GitButler gives the synthetic commit at the base of a workspace.
+///
+/// `but_workspace::commit` and `but_graph::projection` keep their own copies to stay off each
+/// other; change all of them together.
+const WORKSPACE_COMMIT_TITLES: &[&str] =
+    &["GitButler Workspace Commit", "GitButler Integration Commit"];
 
 /// Return the status of the submodule at `rela_path` in `repo`, or `None` if there is no active
 /// submodule with a local clone there.
@@ -63,30 +77,38 @@ impl SubmoduleStatus {
 pub fn submodule_status(
     repo: &gix::Repository,
     rela_path: &BStr,
+    commit: Option<gix::ObjectId>,
 ) -> anyhow::Result<Option<SubmoduleStatus>> {
     let Some(sm_repo) = open_submodule(repo, rela_path)? else {
         return Ok(None);
     };
 
     let head = sm_repo.head()?;
-    let head_ref = head.referent_name().map(|name| name.to_owned());
-    // GitButler always keeps `HEAD` symbolic to the workspace ref while a workspace is applied,
-    // so the ref name is a sufficient signal; a detached `HEAD` is never a workspace.
-    let head_is_workspace_commit = head_ref
-        .as_ref()
-        .is_some_and(|name| crate::is_workspace_ref_name(name.as_ref()));
-
-    let Some(head_id) = sm_repo.head_id().ok().map(|id| id.detach()) else {
-        // An unborn submodule has nothing to record.
+    let head_id = sm_repo.head_id().ok().map(|id| id.detach());
+    let Some(commit_id) = commit.or(head_id) else {
+        // An unborn submodule has nothing to describe.
         return Ok(None);
     };
+    let is_head = Some(commit_id) == head_id;
+
+    // The symbolic ref only says something about the commit when that commit *is* `HEAD`.
+    let head_ref = is_head
+        .then(|| head.referent_name().map(|name| name.to_owned()))
+        .flatten();
+    // While a workspace is applied GitButler keeps `HEAD` symbolic to the workspace ref, which is
+    // the cheap signal. A commit reached any other way (a historical gitlink, a detached `HEAD`)
+    // has to be recognised by the subject GitButler gives it.
+    let is_workspace_commit = head_ref
+        .as_ref()
+        .is_some_and(|name| crate::is_workspace_ref_name(name.as_ref()))
+        || has_workspace_commit_subject(&sm_repo, commit_id)?;
 
     let mut graph: Graph<'_, '_, graph::Commit<Flags>> = Graph::new(&sm_repo, None);
     let remote_tips = remote_tips(&sm_repo)?;
 
-    let candidates = if head_is_workspace_commit {
+    let candidates = if is_workspace_commit {
         sm_repo
-            .find_commit(head_id)?
+            .find_commit(commit_id)?
             .parent_ids()
             .map(|parent| {
                 let id = parent.detach();
@@ -103,12 +125,32 @@ pub fn submodule_status(
 
     Ok(Some(SubmoduleStatus {
         path: rela_path.to_owned(),
-        head_is_pushed: is_reachable_from_any(&sm_repo, head_id, &remote_tips, &mut graph)?,
-        head: head_id,
+        is_pushed: is_reachable_from_any(&sm_repo, commit_id, &remote_tips, &mut graph)?,
+        ref_name: local_branch_at(&sm_repo, commit_id)?,
+        commit: commit_id,
+        is_head,
         head_ref,
-        head_is_workspace_commit,
+        is_workspace_commit,
         candidates,
     }))
+}
+
+/// Return `true` if `commit_id` carries the subject GitButler gives its workspace commits.
+///
+/// A commit that is missing from the submodule is not an error: a gitlink recorded from another
+/// clone may simply not be present here, and "not a workspace commit" is the right answer.
+fn has_workspace_commit_subject(
+    repo: &gix::Repository,
+    commit_id: gix::ObjectId,
+) -> anyhow::Result<bool> {
+    let Ok(commit) = repo.find_commit(commit_id) else {
+        return Ok(false);
+    };
+    let message = commit.message()?;
+    let title = message.title.trim_ascii();
+    Ok(WORKSPACE_COMMIT_TITLES
+        .iter()
+        .any(|known| title == known.as_bytes()))
 }
 
 /// Open the submodule at `rela_path`, or return `None` if it is not an active submodule or has
