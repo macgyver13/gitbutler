@@ -3,6 +3,7 @@
 	import HunkContextMenu from "$components/diff/HunkContextMenu.svelte";
 	import ImageDiff from "$components/diff/ImageDiff.svelte";
 	import LineLocksWarning from "$components/diff/LineLocksWarning.svelte";
+	import SubmoduleDiffView from "$components/diff/SubmoduleDiffView.svelte";
 	import ReduxResult from "$components/shared/ReduxResult.svelte";
 	import binarySvg from "$lib/assets/empty-state/binary.svg?raw";
 	import emptyFileSvg from "$lib/assets/empty-state/empty-file.svg?raw";
@@ -12,6 +13,7 @@
 	import { draggableChips } from "$lib/dragging/draggable";
 	import { HunkDropDataV3 } from "$lib/dragging/draggables";
 	import { DROPZONE_REGISTRY } from "$lib/dragging/registry";
+	import { isSubmoduleStatus } from "$lib/hunks/change";
 	import { canBePartiallySelected, getLineLocks, hunkHeaderEquals } from "$lib/hunks/hunk";
 	import { type SelectionId } from "$lib/selection/key";
 	import { UNCOMMITTED_SERVICE } from "$lib/selection/uncommittedService.svelte";
@@ -71,6 +73,13 @@
 	);
 
 	const isUncommittedChange = $derived(selectionId.type === "worktree");
+
+	// A submodule that replaced a file (or vice-versa) has no meaningful pair of commit
+	// ids to show, so it keeps falling through to the type-change placeholder.
+	const isTypeChange = $derived(
+		(change.status.type === "Modification" || change.status.type === "Rename") &&
+			change.status.subject.flags?.startsWith("TypeChange") === true,
+	);
 
 	const uncommittedService = inject(UNCOMMITTED_SERVICE);
 	const dependencyService = inject(DEPENDENCY_SERVICE);
@@ -199,6 +208,8 @@
 	>
 		{#if uiState.global.svgAsImage.current && change.path.toLowerCase().endsWith(".svg")}
 			<ImageDiff {projectId} {change} {commitId} />
+		{:else if isSubmoduleStatus(change.status) && !isTypeChange}
+			<SubmoduleDiffView {change} />
 		{:else if diff === null}
 			<div class="hunk-placehoder">
 				<EmptyStatePlaceholder image={binarySvg} gap={12} topBottomPadding={34}>
