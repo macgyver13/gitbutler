@@ -393,6 +393,7 @@
 						<CommitListItem
 							commitId={commit.id}
 							commitMessage={commit.message}
+							changeId={commit.changeId}
 							type={commit.state.type}
 							hasConflicts={commit.hasConflicts}
 							busy={controller.busyCommitId === commit.id}

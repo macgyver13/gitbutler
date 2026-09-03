@@ -181,6 +181,7 @@
 								{branchName}
 								commitId={commit.id}
 								commitMessage={commit.message}
+								changeId={commit.changeId}
 								gerritReviewUrl={commit.gerritReviewUrl ?? undefined}
 								committedAt={commitCommittedAt(commit)}
 								hasConflicts={true}

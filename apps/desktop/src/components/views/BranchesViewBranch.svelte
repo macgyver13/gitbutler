@@ -87,6 +87,7 @@
 		type={commitType}
 		diverged={isDiverged}
 		commitMessage={commit.message}
+		changeId={commit.changeId}
 		gerritReviewUrl={commit?.gerritReviewUrl ?? undefined}
 		committedAt={commitCommittedAt(commit)}
 		commitId={commit.id}
