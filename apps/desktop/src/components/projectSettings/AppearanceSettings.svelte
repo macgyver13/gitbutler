@@ -17,6 +17,7 @@
 	const uiState = inject(UI_STATE);
 
 	const pathFirst = uiState.global.pathFirst;
+	const showRevisionIds = uiState.global.showRevisionIds;
 	const allInOneDiff = uiState.global.allInOneDiff;
 	const highlightDiffs = uiState.global.highlightDiffs;
 	const syntaxThemeLight = uiState.global.syntaxThemeLight;
@@ -119,6 +120,24 @@
 			checked={pathFirst.current}
 			onclick={() => {
 				pathFirst.set(!pathFirst.current);
+			}}
+		/>
+	{/snippet}
+</CardGroup.Item>
+
+<CardGroup.Item labelFor="showRevisionIds" standalone>
+	{#snippet title()}
+		Revision IDs
+	{/snippet}
+	{#snippet caption()}
+		Show each commit's short GitButler revision ID, or its Git commit ID when no revision ID exists.
+	{/snippet}
+	{#snippet actions()}
+		<Toggle
+			id="showRevisionIds"
+			checked={showRevisionIds.current}
+			onclick={() => {
+				showRevisionIds.set(!showRevisionIds.current);
 			}}
 		/>
 	{/snippet}

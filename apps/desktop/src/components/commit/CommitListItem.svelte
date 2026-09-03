@@ -3,6 +3,8 @@
 	import CommitTitle from "$components/commit/CommitTitle.svelte";
 	import { URL_SERVICE } from "$lib/backend/url";
 	import { type CommitStatusType } from "$lib/commits/commit";
+	import { shortRevisionId } from "$lib/commits/commit";
+	import { UI_STATE } from "$lib/state/uiState.svelte";
 	import { inject } from "@gitbutler/core/context";
 	import { Avatar, Icon, TestId } from "@gitbutler/ui";
 	import { focusable } from "@gitbutler/ui/focus/focusable";
@@ -14,6 +16,7 @@
 		type: CommitStatusType;
 		branchName?: string;
 		commitId: string;
+		changeId?: string | null;
 		commitMessage: string;
 		committedAt: number;
 		author?: { name: string; email: string; gravatarUrl: string };
@@ -69,6 +72,7 @@
 
 	const {
 		commitMessage,
+		changeId,
 		author,
 		tooltip,
 		first,
@@ -95,6 +99,8 @@
 	let container = $state<HTMLDivElement>();
 
 	const urlService = inject(URL_SERVICE);
+	const uiState = inject(UI_STATE);
+	const revisionId = $derived(shortRevisionId({ id: args.commitId, changeId }));
 
 	function extractReviewId(url: string | undefined): string | null {
 		if (!url) return null;
@@ -174,6 +180,9 @@
 			{/if}
 
 			<div class="commit-name truncate">
+				{#if uiState.global.showRevisionIds.current}
+					<span class="revision-id text-12">{revisionId}</span>
+				{/if}
 				<CommitTitle {commitMessage} truncate className="text-13 text-semibold" {editable} />
 				{#if gerritReviewUrl}
 					{@const reviewId = extractReviewId(gerritReviewUrl)}
@@ -312,6 +321,12 @@
 		min-width: 0; /* Allow truncation to work properly */
 		padding: 12px 0;
 		gap: 6px;
+	}
+
+	.revision-id {
+		flex-shrink: 0;
+		color: var(--text-2);
+		font-family: var(--font-mono);
 	}
 
 	.commit-author-avatar {

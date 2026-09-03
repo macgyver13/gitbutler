@@ -17,6 +17,10 @@ export function isMergeCommit(commit: { parentIds: string[] }): boolean {
 	return commit.parentIds.length > 1;
 }
 
+export function shortRevisionId(commit: { id: string; changeId?: string | null }): string {
+	return commit.changeId?.slice(0, 3) ?? commit.id.slice(0, 7);
+}
+
 export enum CommitStatus {
 	LocalOnly = "LocalOnly",
 	LocalAndRemote = "LocalAndRemote",

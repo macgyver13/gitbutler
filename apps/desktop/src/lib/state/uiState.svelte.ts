@@ -184,6 +184,7 @@ export type GlobalUiState = {
 	defaultTerminal: TerminalSettings;
 	defaultFileListMode: "tree" | "list";
 	pathFirst: boolean;
+	showRevisionIds: boolean;
 	allInOneDiff: boolean;
 	highlightDiffs: boolean;
 	svgAsImage: boolean;
@@ -260,6 +261,7 @@ export class UiState {
 		defaultTerminal: { identifier: "terminal", displayName: "Terminal", platform: "macos" },
 		defaultFileListMode: "list",
 		pathFirst: true,
+		showRevisionIds: false,
 		allInOneDiff: false,
 		highlightDiffs: false,
 		svgAsImage: true,

@@ -97,6 +97,7 @@
 								commitId={commit.id}
 								branchName={branch.branchName}
 								commitMessage={commit.message}
+								changeId={commit.changeId}
 								committedAt={commitCommittedAt(commit)}
 								author={commit.author}
 								selected={commit.id === selectedCommitId}
