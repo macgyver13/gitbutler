@@ -176,7 +176,11 @@ export class UncommittedService {
 	 * defined, it will return the changes assigned to the stack as well as the
 	 * unassigned changes.
 	 */
-	async worktreeChanges(projectId: string, stackId?: string) {
+	async worktreeChanges(
+		projectId: string,
+		stackId?: string,
+		submoduleCommitOverrides: Record<string, string> = {},
+	) {
 		const state = structuredClone(this.state);
 
 		const key = partialKey(stackId ?? null);
@@ -205,21 +209,18 @@ export class UncommittedService {
 
 			const status = change.status;
 			const previousPathBytes = status.type === "Rename" ? status.subject.previousPathBytes : null;
+			// Only meaningful for submodules, where the user may have chosen a pushable commit to
+			// record instead of whatever the submodule worktree has checked out.
+			const commitIdOverride = isSubmoduleStatus(status)
+				? (submoduleCommitOverrides[path] ?? null)
+				: null;
 
-			if (selection.length === 0) {
-				worktreeChanges.push({
-					pathBytes: change.pathBytes,
-					previousPathBytes,
-					hunkHeaders: [],
-				});
-				continue;
-			}
-
-			if (isSubmoduleStatus(status)) {
+			if (selection.length === 0 || isSubmoduleStatus(status)) {
 				// Submodules are always committed as complete changes.
 				worktreeChanges.push({
 					pathBytes: change.pathBytes,
 					previousPathBytes,
+					commitIdOverride,
 					hunkHeaders: [],
 				});
 				continue;
@@ -279,6 +280,7 @@ export class UncommittedService {
 			worktreeChanges.push({
 				pathBytes: change.pathBytes,
 				previousPathBytes,
+				commitIdOverride: null,
 				hunkHeaders: await this.processHunkHeaders(changeDiff, preprocessedHeaders),
 			});
 		}

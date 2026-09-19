@@ -172,7 +172,12 @@ export class AmendCommitWithChangeDzHandler implements DropzoneHandler {
 				break;
 			case "worktree": {
 				const assignments = data.assignments();
-				const worktreeChanges = changesToDiffSpec(await data.treeChanges(), assignments);
+				const projectState = this.uiState.project(this.projectId);
+				const worktreeChanges = changesToDiffSpec(
+					await data.treeChanges(),
+					assignments,
+					projectState.submoduleCommitOverrides.current,
+				);
 
 				if (this.runHooks) {
 					try {
@@ -193,6 +198,7 @@ export class AmendCommitWithChangeDzHandler implements DropzoneHandler {
 
 				if (outcome.newCommit) {
 					this.onresult(outcome.newCommit);
+					projectState.submoduleCommitOverrides.set({});
 				}
 
 				const rejectionResult = toRejectedChangesResult(this.projectId, outcome);
@@ -292,6 +298,7 @@ export class UncommitDzHandler implements DropzoneHandler {
 						changes: [
 							{
 								previousPathBytes,
+								commitIdOverride: null,
 								pathBytes: data.change.pathBytes,
 								hunkHeaders: [
 									{
@@ -377,6 +384,7 @@ export class AmendCommitWithHunkDzHandler implements DropzoneHandler {
 							changes: [
 								{
 									previousPathBytes,
+									commitIdOverride: null,
 									pathBytes: data.change.pathBytes,
 									hunkHeaders: [
 										{
@@ -403,6 +411,7 @@ export class AmendCommitWithHunkDzHandler implements DropzoneHandler {
 			const worktreeChanges = [
 				{
 					previousPathBytes,
+					commitIdOverride: null,
 					pathBytes: data.change.pathBytes,
 					hunkHeaders: [
 						{

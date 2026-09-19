@@ -18,6 +18,7 @@ pub fn to_change_specs_whole_file(changes: but_core::WorktreeChanges) -> Vec<Dif
             previous_path: change.previous_path().map(ToOwned::to_owned),
             path: change.path,
             hunk_headers: Vec::new(),
+            commit_id_override: None,
         })
         .collect();
     assert!(
@@ -55,6 +56,7 @@ pub fn to_change_specs_all_hunks_with_context_lines(
                         previous_path: change.previous_path().map(ToOwned::to_owned),
                         path: change.path,
                         hunk_headers: hunks.into_iter().map(Into::into).collect(),
+                        commit_id_override: None,
                     },
                     Some(_) => unreachable!("tests won't be binary or too large"),
                     None => {

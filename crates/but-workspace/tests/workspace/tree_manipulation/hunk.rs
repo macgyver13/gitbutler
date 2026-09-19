@@ -25,6 +25,7 @@ fn dropped_hunks() -> anyhow::Result<()> {
         previous_path: None,
         path: change.path,
         hunk_headers: hunks_to_discard,
+        commit_id_override: None,
     };
     let dropped = discard_workspace_changes(&repo, Some(discard_spec), CONTEXT_LINES)?;
     // It drops just the two missing ones hunks
@@ -39,6 +40,7 @@ fn dropped_hunks() -> anyhow::Result<()> {
             HunkHeader("-1,1", "+1,0"),
             HunkHeader("-10,1", "+13,3"),
         ],
+        commit_id_override: None,
     },
 ]
 
@@ -75,6 +77,7 @@ D  to-be-deleted-in-index
                 previous_path: None,
                 path: file_name.into(),
                 hunk_headers: vec![hunk],
+                commit_id_override: None,
             }),
             CONTEXT_LINES,
         )
@@ -160,6 +163,7 @@ eleven
             previous_path: None,
             path: change.path.clone(),
             hunk_headers: vec![last_hunk.into()],
+            commit_id_override: None,
         };
         let dropped = discard_workspace_changes(&repo, Some(discard_spec), CONTEXT_LINES)?;
         assert_eq!(
@@ -238,6 +242,7 @@ fn from_beginning() -> anyhow::Result<()> {
             previous_path: None,
             path: change.path.clone(),
             hunk_headers: vec![first_hun_hunk.into()],
+            commit_id_override: None,
         };
         let dropped = discard_workspace_changes(&repo, Some(discard_spec), CONTEXT_LINES)?;
         assert_eq!(
@@ -363,6 +368,7 @@ fn from_selections() -> anyhow::Result<()> {
             // '-18\n'
             hunk_header("-14,1", "+17,0"),
         ],
+        commit_id_override: None,
     };
     let dropped = discard_workspace_changes(&repo, Some(discard_spec), CONTEXT_LINES)?;
     assert_eq!(dropped, [], "all sub-hunks could be associated");
@@ -421,11 +427,13 @@ fn handles_multiple_diffspecs_for_same_file() -> anyhow::Result<()> {
         previous_path: None,
         path: change.path.clone(),
         hunk_headers: vec![hunk_header("-1,0", "+1,4")],
+        commit_id_override: None,
     };
     let second_spec = DiffSpec {
         previous_path: None,
         path: change.path.clone(),
         hunk_headers: vec![hunk_header("-13,2", "+17,0")],
+        commit_id_override: None,
     };
     let dropped = discard_workspace_changes(&repo, vec![first_spec, second_spec], CONTEXT_LINES)?;
     assert_eq!(dropped, [], "all sub-hunks could be associated");
@@ -520,6 +528,7 @@ fn from_selections_with_context() -> anyhow::Result<()> {
             // Get 17,18 back
             hunk_header("-13,2", "+1,16"),
         ],
+        commit_id_override: None,
     };
     let dropped = discard_workspace_changes(&repo, Some(discard_spec.clone()), ui_context_lines)?;
     assert_eq!(dropped.len(), 0, "all sub-hunks could be associated");
@@ -618,6 +627,7 @@ fn hunk_removal_of_additions_single_line() -> anyhow::Result<()> {
             hunk_header("-1,0", "+5,1"),
             // TODO: figure out a header specification
         ],
+        commit_id_override: None,
     };
     let dropped = discard_workspace_changes(&repo, Some(discard_spec), CONTEXT_LINES)?;
     assert_eq!(dropped.len(), 0, "all sub-hunks could be associated");
@@ -679,6 +689,7 @@ fn hunk_removal_of_removal_single_line() -> anyhow::Result<()> {
             // Internally we turn this into [("-1,5", "+1,0"), ("-6,4", "+1,0")].
             hunk_header("-5,1", "+1,0"),
         ],
+        commit_id_override: None,
     };
     let dropped = discard_workspace_changes(&repo, Some(discard_spec), CONTEXT_LINES)?;
     assert_eq!(dropped.len(), 0, "all sub-hunks could be associated");
@@ -746,6 +757,7 @@ fn hunk_removal_of_modifications() -> anyhow::Result<()> {
             // This will yield '[("-1,4", "+1,4"), ("-6,5", "+6,5")]' internally.
             hunk_header("-1,10", "+5,1"),
         ],
+        commit_id_override: None,
     };
 
     let dropped = discard_workspace_changes(&repo, Some(discard_spec), CONTEXT_LINES)?;

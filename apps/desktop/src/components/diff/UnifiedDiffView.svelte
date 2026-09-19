@@ -209,7 +209,7 @@
 		{#if uiState.global.svgAsImage.current && change.path.toLowerCase().endsWith(".svg")}
 			<ImageDiff {projectId} {change} {commitId} />
 		{:else if isSubmoduleStatus(change.status) && !isTypeChange}
-			<SubmoduleDiffView {change} />
+			<SubmoduleDiffView {projectId} {change} {selectionId} />
 		{:else if diff === null}
 			<div class="hunk-placehoder">
 				<EmptyStatePlaceholder image={binarySvg} gap={12} topBottomPadding={34}>

@@ -1,3 +1,4 @@
+import { isSubmoduleStatus } from "$lib/hunks/change";
 import { isDefined } from "@gitbutler/ui-svelte/utils/typeguards";
 import type { DiffSpec, HunkAssignment } from "@gitbutler/but-sdk";
 import type { TreeChange } from "@gitbutler/but-sdk";
@@ -6,15 +7,20 @@ import type { TreeChange } from "@gitbutler/but-sdk";
 export function changesToDiffSpec(
 	changes: TreeChange[],
 	assignments?: Record<string, HunkAssignment[]>,
+	submoduleCommitOverrides: Record<string, string> = {},
 ): DiffSpec[] {
 	return changes.map((change) => {
 		const previousPathBytes =
 			change.status.type === "Rename" ? change.status.subject.previousPathBytes : null;
 		const assignment = assignments?.[change.path];
 		const hunkHeaders = assignment?.map((a) => a.hunkHeader).filter(isDefined) ?? [];
+		const commitIdOverride = isSubmoduleStatus(change.status)
+			? (submoduleCommitOverrides[change.path] ?? null)
+			: null;
 
 		return {
 			previousPathBytes,
+			commitIdOverride,
 			pathBytes: change.pathBytes,
 			hunkHeaders,
 		};

@@ -252,6 +252,7 @@ fn commit_all_rejected_is_noop() -> Result<()> {
             previous_path: None,
             path: "does-not-exist".into(),
             hunk_headers: vec![],
+            commit_id_override: None,
         }],
         RelativeToRef::Commit(two_id),
         InsertSide::Above,

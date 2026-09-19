@@ -187,6 +187,7 @@ pub fn create_tree_without_diff(
                             previous_path: change.previous_path.clone(),
                             path: change.path.clone(),
                             hunk_headers: bad_hunk_headers,
+                            commit_id_override: None,
                         });
                     }
 

@@ -154,6 +154,7 @@ export class OutsideLaneDzHandler implements DropzoneHandler {
 					[
 						{
 							previousPathBytes,
+							commitIdOverride: null,
 							pathBytes: data.change.pathBytes,
 							hunkHeaders: [
 								{

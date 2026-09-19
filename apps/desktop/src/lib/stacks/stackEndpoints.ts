@@ -129,6 +129,10 @@ export function readableRejectionReason(reason: RejectionReason): string {
 			return "Unsupported tree entry";
 		case "missingDiffSpecAssociation":
 			return "Missing diff spec association";
+		case "submoduleOverrideOnNonSubmodule":
+			return "Not a submodule";
+		case "submoduleOverrideCommitNotFound":
+			return "Commit not found in the submodule";
 	}
 }
 
@@ -667,7 +671,7 @@ export function buildStackEndpoints(build: BackendEndpointBuilder) {
 			},
 		}),
 		stashIntoBranch: build.mutation<
-			DiffSpec[],
+			{ newCommit: string | null; rejectedChanges: BackendRejectedChange[] },
 			{ projectId: string; branchName: string; worktreeChanges: DiffSpec[] }
 		>({
 			extraOptions: {

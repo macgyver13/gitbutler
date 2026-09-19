@@ -3,6 +3,7 @@
 	import { changesToDiffSpec } from "$lib/commits/utils";
 	import { autoSelectBranchCreationFeature } from "$lib/config/uiFeatureFlags";
 	import { isTreeChange } from "$lib/hunks/change";
+	import { UI_STATE } from "$lib/state/uiState.svelte";
 	import { STACK_SERVICE } from "$lib/stacks/stackService.svelte";
 	import { inject } from "@gitbutler/core/context";
 	import { AsyncButton, Button, Modal } from "@gitbutler/ui-svelte";
@@ -35,6 +36,8 @@
 	const { projectId }: Props = $props();
 
 	const stackService = inject(STACK_SERVICE);
+	const uiState = inject(UI_STATE);
+	const projectState = $derived(uiState.project(projectId));
 
 	let modal: ReturnType<typeof Modal> | undefined;
 	let stashBranchName = $state<string>();
@@ -55,11 +58,24 @@
 	async function confirmStashIntoBranch(item: ChangedFilesItem, branchName: string | undefined) {
 		if (!branchName) return;
 
-		await stackService.stashIntoBranch({
+		const overrides = projectState.submoduleCommitOverrides.current;
+		const outcome = await stackService.stashIntoBranch({
 			projectId,
 			branchName,
-			worktreeChanges: changesToDiffSpec(item.changes),
+			worktreeChanges: changesToDiffSpec(item.changes, undefined, overrides),
 		});
+
+		// Overrides apply to one commit. A rejected path was not recorded, so its choice stays.
+		if (outcome.newCommit) {
+			const rejected = new Set(outcome.rejectedChanges.map((change) => change.path));
+			const next = { ...projectState.submoduleCommitOverrides.current };
+			for (const change of item.changes) {
+				if (!rejected.has(change.path)) {
+					delete next[change.path];
+				}
+			}
+			projectState.submoduleCommitOverrides.set(next);
+		}
 
 		modal?.close();
 	}

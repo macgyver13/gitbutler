@@ -1519,6 +1519,25 @@ export declare function storeGithubPat(accessToken: string): Promise<GithubAuthS
 export declare function storeGitlabPat(accessToken: string): Promise<GitlabAuthStatusResponse>
 
 /**
+ * Describe one commit of the submodule `change` points at, and whether anybody cloning the
+ * superproject could resolve it.
+ *
+ * `commit_id` is the gitlink to describe, which callers take from the change itself: for an
+ * uncommitted change that is what committing would record, and for a committed one it is what
+ * that commit already recorded.
+ *
+ * Returns `None` if the path is not an active submodule with a local clone, which is the normal
+ * outcome for an embedded repository or an uninitialized submodule.
+ *
+ * This is deliberately not folded into [`changes_in_worktree()`]: it opens the submodule
+ * repository and walks its history, which is too costly for a listing that runs on every status
+ * refresh. Call it when a submodule change is selected, and before committing one.
+ *
+ * {@link ../../../../../crates/but-api/src/diff.rs:142}
+ */
+export declare function submoduleStatus(projectId: string, change: TreeChange, commitId: string): Promise<SubmoduleStatus | null>
+
+/**
  * Tears off a branch using the behavior described by [`tear_off_branch_with_perm()`].
  *
  * This acquires exclusive worktree access from `ctx`, tears `subject_branch`

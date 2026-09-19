@@ -16,6 +16,7 @@ fn diff_spec_for_file(path: &str) -> DiffSpec {
         previous_path: None,
         path: path.into(),
         hunk_headers: vec![],
+        commit_id_override: None,
     }
 }
 
@@ -44,6 +45,7 @@ fn source_with_hunks(
             previous_path: None,
             path: path.into(),
             hunk_headers,
+            commit_id_override: None,
         }],
     }
 }
@@ -833,6 +835,7 @@ fn uncommit_changes_from_commits_whole_file_spec_supersedes_hunk_specs() -> Resu
                     previous_path: None,
                     path: "story.txt".into(),
                     hunk_headers: vec![hunk_header("-2,1", "+2,1")],
+                    commit_id_override: None,
                 },
             ],
         }],

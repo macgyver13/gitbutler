@@ -126,6 +126,34 @@ pub fn tree_change_diffs_from_source(
     change.unified_patch(&repo, context_lines)
 }
 
+/// Describe one commit of the submodule `change` points at, and whether anybody cloning the
+/// superproject could resolve it.
+///
+/// `commit_id` is the gitlink to describe, which callers take from the change itself: for an
+/// uncommitted change that is what committing would record, and for a committed one it is what
+/// that commit already recorded.
+///
+/// Returns `None` if the path is not an active submodule with a local clone, which is the normal
+/// outcome for an embedded repository or an uninitialized submodule.
+///
+/// This is deliberately not folded into [`changes_in_worktree()`]: it opens the submodule
+/// repository and walks its history, which is too costly for a listing that runs on every status
+/// refresh. Call it when a submodule change is selected, and before committing one.
+#[but_api(napi, provides = [WorktreeChanges])]
+#[instrument(err(Debug))]
+pub fn submodule_status(
+    ctx: &Context,
+    change: TreeChange,
+    commit_id: gix::ObjectId,
+) -> anyhow::Result<Option<but_core::ui::SubmoduleStatus>> {
+    let change: but_core::TreeChange = change.into();
+    let repo = ctx.repo.get()?;
+    Ok(
+        but_core::submodule::submodule_status(&repo, change.path.as_ref(), Some(commit_id))?
+            .map(Into::into),
+    )
+}
+
 /// The UI's worktree changes, with the modification times the file lists show.
 ///
 /// Composed here rather than in `but_core::diff::ui::worktree_changes()`, which

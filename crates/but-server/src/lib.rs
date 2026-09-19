@@ -446,6 +446,7 @@ pub async fn run(config: Config) -> anyhow::Result<()> {
             but_post(legacy::git::git_get_global_config_cmd),
         )
         .route("/tree_change_diffs", but_post(diff::tree_change_diffs_cmd))
+        .route("/submodule_status", but_post(diff::submodule_status_cmd))
         .route("/get_workspace", but_post(workspace::get_workspace_cmd))
         .route(
             "/commit_details_with_line_stats",

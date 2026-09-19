@@ -36,6 +36,7 @@ export const apiProvides = {
 	listReviews: ["Reviews"],
 	listSnapshots: ["Workspace"],
 	operatingMode: ["OperatingMode"],
+	submoduleStatus: ["WorktreeChanges"],
 	treeChangeDiffs: ["Diffs"],
 	treeChangeDiffsFromSource: ["Diffs"],
 	workspaceFetchFromRemotes: [],
